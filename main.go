@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"strconv"
+	"sync"
+	"time"
 )
 
 // Package level variables so all functions and main can access them.
@@ -12,7 +13,17 @@ var conferenceName string = "Go Conference"
 var remainingTickets uint = 50
 
 // Slice
-var bookings = make([]map[string]string, 0)
+// var bookings = make([]map[string]string, 0)
+var bookings = make([]UserData, 0)
+
+type UserData struct {
+	firstName       string
+	lastName        string
+	email           string
+	numberOfTickets uint
+}
+
+var wg = sync.WaitGroup{}
 
 func main() {
 
@@ -31,6 +42,9 @@ func main() {
 
 			// Book the tickets to the conference and calculate the remaining tickets.
 			bookTicket(userTickets, firstName, lastName, email)
+
+			wg.Add(1)                                              // Add the threads we needs to wait for.
+			go sendTicket(userTickets, firstName, lastName, email) // Adding "go" makes method concurrent (asynchronous).
 
 			// Call function to print the users that registered for the conference; first names only.
 			//printFirstNames(bookings)
@@ -55,6 +69,7 @@ func main() {
 			}
 		}
 	}
+	wg.Wait() // This makes application wait until all concurrent (Go) threads have ended.
 } // End main
 
 // Function greets the users.
@@ -68,7 +83,7 @@ func greetUsers() {
 func getFirstNames() []string {
 	firstNames := []string{}
 	for _, booking := range bookings {
-		firstNames = append(firstNames, booking["firstName"])
+		firstNames = append(firstNames, booking.firstName)
 
 	}
 	return firstNames
@@ -101,16 +116,26 @@ func bookTicket(userTickets uint, firstName string, lastName string, email strin
 	remainingTickets = remainingTickets - userTickets
 
 	// Create a map for the user.
-	var userData = make(map[string]string)
-	userData["firstName"] = firstName
-	userData["lastName"] = lastName
-	userData["email"] = email
-	userData["numberOfTickets"] = strconv.FormatUint(uint64(userTickets), 10)
+	var userData = UserData{
+		firstName:       firstName,
+		lastName:        lastName,
+		email:           email,
+		numberOfTickets: userTickets,
+	}
 
 	// Add the user map to the booking slice.
 	bookings = append(bookings, userData)
-	fmt.Printf("List of booking is %s\n", bookings)
+	fmt.Printf("List of booking is %v\n", bookings)
 
 	fmt.Printf("Thank you %s %s for booking %d tickets. You will receive a confirmation email at %s\n", firstName, lastName, userTickets, email)
 	fmt.Printf("%d tickets now remain for the %s\n", remainingTickets, conferenceName)
+}
+
+func sendTicket(userTickets uint, firstName string, lastName string, email string) {
+	time.Sleep(50 * time.Second) // Sleep
+	var ticket = fmt.Sprintf("%v tickets for %v %v\n", userTickets, firstName, lastName)
+	fmt.Println("###############")
+	fmt.Printf("Sending ticket:\n %v \nto email address %v\n", ticket, email)
+	fmt.Println("###############")
+	wg.Done() // Removes thread from the Add function.
 }

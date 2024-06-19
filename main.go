@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"strconv"
 )
 
 // Package level variables so all functions and main can access them.
@@ -12,7 +12,7 @@ var conferenceName string = "Go Conference"
 var remainingTickets uint = 50
 
 // Slice
-var bookings = []string{}
+var bookings = make([]map[string]string, 0)
 
 func main() {
 
@@ -68,8 +68,8 @@ func greetUsers() {
 func getFirstNames() []string {
 	firstNames := []string{}
 	for _, booking := range bookings {
-		var names = strings.Fields(booking)
-		firstNames = append(firstNames, names[0])
+		firstNames = append(firstNames, booking["firstName"])
+
 	}
 	return firstNames
 	//fmt.Printf("These first names of the bookings for the %s: %s\n", conferenceName, firstNames)
@@ -99,7 +99,17 @@ func getUserInput() (string, string, string, uint) {
 func bookTicket(userTickets uint, firstName string, lastName string, email string) {
 	// Subtract the tickets booked.
 	remainingTickets = remainingTickets - userTickets
-	bookings = append(bookings, firstName+" "+lastName)
+
+	// Create a map for the user.
+	var userData = make(map[string]string)
+	userData["firstName"] = firstName
+	userData["lastName"] = lastName
+	userData["email"] = email
+	userData["numberOfTickets"] = strconv.FormatUint(uint64(userTickets), 10)
+
+	// Add the user map to the booking slice.
+	bookings = append(bookings, userData)
+	fmt.Printf("List of booking is %s\n", bookings)
 
 	fmt.Printf("Thank you %s %s for booking %d tickets. You will receive a confirmation email at %s\n", firstName, lastName, userTickets, email)
 	fmt.Printf("%d tickets now remain for the %s\n", remainingTickets, conferenceName)
